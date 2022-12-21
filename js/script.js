@@ -34,7 +34,7 @@ class View {
                               <li>Stars:${userData.stargazers_count}</li>
                             </ul>
                             <button class = "b-list__button">
-                              <img src="/img/cross-mark-304374.svg" alt="Clouse">
+                              <img src="img/cross-mark-304374.svg" alt="Clouse">
                             </button>`;
     this.listUsers.append(elementList);
     return elementList;
