@@ -1,11 +1,46 @@
+const app = document.getElementById("app");
+const input = document.querySelector(".b-input");
+const listFind = document.querySelector(".b-input__list");
+const listUsers = document.querySelector(".b-list");
+const searchInput = document.querySelector(".search-input");
+const USERS_PER_PAGE = 5;
+
 class View {
-  constructor() {
-    this.app = document.getElementById("app");
-    this.input = app.querySelector(".b-input");
-    this.listFind = app.querySelector(".b-input__list");
-    this.listUsers = document.querySelector(".b-list");
-    this.searchInput = app.querySelector(".search-input");
+  constructor(app, input, listFind, listUsers, searchInput) {
+    this.app = app;
+    this.input = input;
+    this.listFind = listFind;
+    this.listUsers = listUsers;
+    this.searchInput = searchInput;
   }
+
+  clickInput(input) {
+    input.addEventListener(
+      "keyup",
+      this.debounce(this.searchUsers.bind(this), 500),
+    );
+  }
+
+  async searchUsers() {
+    this.clearElement(this.listFind);
+    if (this.searchInput.value) {
+      return await fetch(
+        `https://api.github.com/search/repositories?q=${this.searchInput.value}&per_page=${USERS_PER_PAGE}`,
+      ).then(res => {
+        if (res.ok) {
+          res.json().then(res => {
+            res.items.forEach(user => {
+              this.createUser(user);
+            });
+          });
+        } else {
+        }
+      });
+    } else {
+      this.clearElement(this.listFind) = "";
+    }
+  }
+
   createElement(elementTag, elementClass) {
     const element = document.createElement(elementTag);
     if (elementClass) {
@@ -13,17 +48,20 @@ class View {
     }
     return element;
   }
+
   createUser(userData) {
     const userElement = this.createElement("button", "b-input__el");
-    userElement.addEventListener("click", () => {
-      this.searchInput.value = "";
-      this.listFind.innerHTML = "";
-      const card = this.createCard(userData);
-      const buttonClouse = card.querySelector(".b-list__button");
-      buttonClouse.addEventListener("click", () => card.remove());
-    });
+    userElement.addEventListener("click", () => this.clickUser(userData));
     userElement.innerHTML = `<span class="b-list__name">${userData.name} </span>`;
     this.listFind.append(userElement);
+  }
+
+  clickUser(userData) {
+    this.searchInput.value = "";
+    this.clearElement(this.listFind);
+    const card = this.createCard(userData);
+    const buttonClouse = card.querySelector(".b-list__button");
+    buttonClouse.addEventListener("click", () => card.remove());
   }
 
   createCard(userData) {
@@ -39,41 +77,9 @@ class View {
     this.listUsers.append(elementList);
     return elementList;
   }
-}
 
-const USERS_PER_PAGE = 5;
-
-class Search {
-  constructor(view) {
-    this.view = view;
-    this.view.searchInput.addEventListener(
-      "keyup",
-      this.debounce(this.searchUsers.bind(this), 500),
-    );
-  }
-
-  async searchUsers() {
-    this.clearUsers();
-    if (this.view.searchInput.value) {
-      return await fetch(
-        `https://api.github.com/search/repositories?q=${this.view.searchInput.value}&per_page=${USERS_PER_PAGE}`,
-      ).then(res => {
-        if (res.ok) {
-          res.json().then(res => {
-            res.items.forEach(user => {
-              this.view.createUser(user);
-            });
-          });
-        } else {
-        }
-      });
-    } else {
-      this.clearUsers();
-    }
-  }
-
-  clearUsers() {
-    this.view.listFind.innerHTML = "";
+  clearElement(element) {
+    element.innerHTML = "";
   }
 
   debounce(callee, timeoutMs) {
@@ -88,4 +94,5 @@ class Search {
   }
 }
 
-new Search(new View());
+const Main = new View(app, input, listFind, listUsers, searchInput);
+Main.clickInput(Main.searchInput);
