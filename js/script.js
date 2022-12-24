@@ -5,94 +5,74 @@ const listUsers = document.querySelector(".b-list");
 const searchInput = document.querySelector(".search-input");
 const USERS_PER_PAGE = 5;
 
-class View {
-  constructor(app, input, listFind, listUsers, searchInput) {
-    this.app = app;
-    this.input = input;
-    this.listFind = listFind;
-    this.listUsers = listUsers;
-    this.searchInput = searchInput;
+const debounce = (fn, debounceTime) => {
+  let timeout;
+  function wrapper() {
+    const func = () => fn.apply(this, arguments);
+    clearTimeout(timeout);
+    timeout = setTimeout(func, debounceTime);
   }
+  return wrapper;
+};
 
-  clickInput(input) {
-    input.addEventListener(
-      "keyup",
-      this.debounce(this.searchUsers.bind(this), 500),
-    );
-  }
-
-  async searchUsers() {
-    this.clearElement(this.listFind);
-    if (this.searchInput.value) {
-      return await fetch(
-        `https://api.github.com/search/repositories?q=${this.searchInput.value}&per_page=${USERS_PER_PAGE}`,
-      ).then(res => {
-        if (res.ok) {
-          res.json().then(res => {
-            res.items.forEach(user => {
-              this.createUser(user);
-            });
+async function searchUsers() {
+  listFind.innerHTML = "";
+  if (searchInput.value) {
+    return await fetch(
+      `https://api.github.com/search/repositories?q=${searchInput.value}&per_page=${USERS_PER_PAGE}`,
+    ).then(res => {
+      if (res.ok) {
+        res.json().then(res => {
+          res.items.forEach(user => {
+            createUser(user);
           });
-        } else {
-        }
-      });
-    } else {
-      this.clearElement(this.listFind) = "";
-    }
-  }
-
-  createElement(elementTag, elementClass) {
-    const element = document.createElement(elementTag);
-    if (elementClass) {
-      element.classList.add(elementClass);
-    }
-    return element;
-  }
-
-  createUser(userData) {
-    const userElement = this.createElement("button", "b-input__el");
-    userElement.addEventListener("click", () => this.clickUser(userData));
-    userElement.innerHTML = `<span class="b-list__name">${userData.name} </span>`;
-    this.listFind.append(userElement);
-  }
-
-  clickUser(userData) {
-    this.searchInput.value = "";
-    this.clearElement(this.listFind);
-    const card = this.createCard(userData);
-    const buttonClouse = card.querySelector(".b-list__button");
-    buttonClouse.addEventListener("click", () => card.remove());
-  }
-
-  createCard(userData) {
-    const elementList = this.createElement("div", "b-list__el");
-    elementList.innerHTML = `<ul class="b-list__list"> 
-                              <li>Name:${userData.name}</li>
-                              <li>Owner:${userData.owner.login}</li>
-                              <li>Stars:${userData.stargazers_count}</li>
-                            </ul>
-                            <button class = "b-list__button">
-                              <img src="img/cross-mark-304374.svg" alt="Clouse">
-                            </button>`;
-    this.listUsers.append(elementList);
-    return elementList;
-  }
-
-  clearElement(element) {
-    element.innerHTML = "";
-  }
-
-  debounce(callee, timeoutMs) {
-    return function perform(...args) {
-      let previousCall = this.lastCall;
-      this.lastCall = Date.now();
-      if (previousCall && this.lastCall - previousCall <= timeoutMs) {
-        clearTimeout(this.lastCallTimer);
+        });
+      } else {
+        return res.json().then(error => {
+          const err = new Error("Запрос не получен");
+          err.data = error;
+          throw err;
+        });
       }
-      this.lastCallTimer = setTimeout(() => callee(...args), timeoutMs);
-    };
+    });
+  } else {
+    listFind.innerHTML = "";
   }
 }
 
-const Main = new View(app, input, listFind, listUsers, searchInput);
-Main.clickInput(Main.searchInput);
+function createUser(userData) {
+  const userElement = this.createElement("button", "b-input__el");
+  userElement.addEventListener("click", () => {
+    searchInput.value = "";
+    listFind.innerHTML = "";
+    const card = this.createCard(userData);
+    const buttonClouse = card.querySelector(".b-list__button");
+    buttonClouse.addEventListener("click", () => card.remove());
+  });
+  userElement.innerHTML = `<span class="b-list__name">${userData.name} </span>`;
+  listFind.append(userElement);
+}
+
+function createElement(elementTag, elementClass) {
+  const element = document.createElement(elementTag);
+  if (elementClass) {
+    element.classList.add(elementClass);
+  }
+  return element;
+}
+
+function createCard(userData) {
+  const elementList = createElement("div", "b-list__el");
+  elementList.innerHTML = `<ul class="b-list__list"> 
+                            <li>Name:${userData.name}</li>
+                            <li>Owner:${userData.owner.login}</li>
+                            <li>Stars:${userData.stargazers_count}</li>
+                          </ul>
+                          <button class = "b-list__button">
+                            <img src="img/close.svg" alt="Clouse">
+                          </button>`;
+  listUsers.append(elementList);
+  return elementList;
+}
+
+searchInput.addEventListener("keyup", debounce(searchUsers, 1500));
